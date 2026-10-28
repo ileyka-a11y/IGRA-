@@ -1,0 +1,496 @@
+<!doctype html>
+<html lang="ru"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Десятки и единицы</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Comfortaa:wght@500;700&family=Nunito:wght@500;700;800&display=swap">
+<style>
+/* Layout: «парта» слева — две ладони и надпись перед ними; справа — панель с таймером, примером и кнопками. На телефоне всё в одну колонку. */
+:root{
+  --desk:#e7f0f7;        /* фон — светлая парта */
+  --card:#ffffff;
+  --ink:#1f3350;         /* текст, тёмно-синие чернила */
+  --muted:#5d7290;
+  --line:#c9d8e6;
+  --skin:#f5c9a8;
+  --skin-edge:#d99c78;
+  --stick:#3fae4f;
+  --stick-dark:#277a34;
+  --band:#e2533f;        /* резинка для десятка */
+  --sun:#ffd54a;
+  --f-display:'Comfortaa', 'Nunito', system-ui, sans-serif;
+  --f-body:'Nunito', system-ui, -apple-system, 'Segoe UI', sans-serif;
+  color-scheme: light;
+}
+html,body{background:var(--desk);color:var(--ink)}
+body{font-family:var(--f-body);font-size:16px;line-height:1.45}
+.wrap{max-width:1040px;margin:0 auto;padding-block:20px 32px;
+  padding-left:max(16px, env(safe-area-inset-left, 0px));
+  padding-right:max(16px, env(safe-area-inset-right, 0px));
+  display:flex;flex-direction:column;gap:18px}
+header h1{font-family:var(--f-display);font-weight:700;font-size:clamp(22px,4vw,30px);margin:0;text-wrap:balance}
+header p{margin:4px 0 0;color:var(--muted)}
+
+.game{display:grid;grid-template-columns:minmax(0,1fr) 300px;gap:20px;align-items:start}
+@media (max-width:780px){.game{grid-template-columns:1fr}}
+
+/* ---------- Руки ---------- */
+.board{background:var(--card);border:2px solid var(--line);border-radius:22px;padding:22px 14px 18px;display:flex;flex-direction:column;align-items:center;gap:14px;min-width:0}
+.hands{display:flex;justify-content:center;gap:clamp(8px,3vw,28px);width:100%}
+.hand{container-type:inline-size;position:relative;width:min(44%,250px);aspect-ratio:200/220}
+.hand svg{position:absolute;inset:0;width:100%;height:100%}
+.hand.right svg{transform:scaleX(-1)}
+.sticks{position:absolute;left:13%;right:13%;top:12%;bottom:5%;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;gap:4cqw}
+.bundles{display:grid;grid-template-columns:repeat(5,auto);gap:3cqw 2.4cqw;justify-content:center}
+.bundles:empty,.loose:empty{display:none}
+.loose{display:flex;flex-direction:column;align-items:center;gap:3cqw}
+.row{display:flex;gap:4.5cqw}
+.group{display:flex;gap:1.6cqw}
+.stick{width:3.2cqw;height:18cqw;border-radius:2cqw;
+  background:linear-gradient(90deg,var(--stick-dark),var(--stick) 45%,#6fd17c 60%,var(--stick));
+  box-shadow:0 .6cqw 0 rgba(31,51,80,.18)}
+.stick.enter{animation:drop .55s cubic-bezier(.3,1.4,.5,1) both}
+.stick.leave{animation:lift .8s ease-in forwards}
+@keyframes drop{from{transform:translateY(-60cqw) rotate(-12deg);opacity:0}to{transform:none;opacity:1}}
+@keyframes lift{to{transform:translateY(-70cqw) rotate(18deg);opacity:0}}
+
+/* связанный десяток: 10 тонких палочек с красной резинкой */
+.bundle{position:relative;display:flex;gap:.25cqw;padding:0 .4cqw}
+.bundle i{display:block;width:1.05cqw;height:15cqw;border-radius:1cqw;
+  background:linear-gradient(90deg,var(--stick-dark),var(--stick) 50%,#6fd17c)}
+.bundle::after{content:"";position:absolute;left:-.4cqw;right:-.4cqw;top:50%;height:2.6cqw;transform:translateY(-50%);background:var(--band);border-radius:2cqw;box-shadow:0 .4cqw 0 rgba(0,0,0,.18)}
+.bundle.fresh{animation:pop .6s cubic-bezier(.3,1.5,.5,1) both}
+.bundle.leave{animation:lift .8s ease-in forwards}
+
+/* надпись перед руками */
+.caption{min-height:64px;display:flex;align-items:center;justify-content:center;text-align:center}
+.caption .say{font-family:var(--f-display);font-weight:700;font-size:clamp(22px,4.6vw,34px);text-wrap:balance;animation:pop .5s cubic-bezier(.3,1.5,.5,1) both}
+.caption .hint{color:var(--muted);font-size:18px}
+@keyframes pop{from{transform:scale(.6);opacity:0}to{transform:none;opacity:1}}
+
+.pv{display:flex;gap:8px}
+.pv div{display:flex;flex-direction:column;align-items:center;min-width:64px;border:2px solid var(--line);border-radius:12px;padding:4px 10px}
+.pv small{font-size:12px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);font-weight:700}
+.pv b{font:700 30px/1.1 var(--f-display);font-variant-numeric:tabular-nums}
+.pv .t b{color:var(--band)} .pv .u b{color:var(--stick-dark)}
+
+/* ---------- Ответ ребёнка ---------- */
+.answer{display:flex;flex-direction:column;align-items:center;gap:14px;width:100%;border-top:2px dashed var(--line);padding-top:16px}
+.dials{display:flex;gap:clamp(10px,3vw,24px);flex-wrap:wrap;justify-content:center}
+.dial{display:flex;flex-direction:column;align-items:center;gap:6px}
+.dial small{font-size:13px;letter-spacing:.06em;text-transform:uppercase;font-weight:800;color:var(--muted)}
+.ctl{display:flex;align-items:center;gap:8px}
+.ctl output{min-width:62px;text-align:center;font:700 44px/1 var(--f-display);font-variant-numeric:tabular-nums}
+.dial.t output{color:var(--band)} .dial.u output{color:var(--stick-dark)}
+button.step{width:60px;height:60px;padding:0;border-radius:50%;font:800 32px/1 var(--f-body);background:var(--desk);border-color:var(--line);touch-action:manipulation}
+button.step:active{transform:scale(.94)}
+.arow{display:flex;gap:10px;flex-wrap:wrap;justify-content:center}
+.arow button{min-height:56px;min-width:160px}
+button.mic{display:inline-flex;align-items:center;justify-content:center;gap:8px;background:#e3eefc;border-color:#9dbbe6;color:#1d4f91}
+button.mic.on{background:#e2533f;border-color:#b33a29;color:#fff;animation:pulse 1.2s ease-in-out infinite}
+@keyframes pulse{50%{box-shadow:0 0 0 8px rgba(226,83,63,.2)}}
+.fb{min-height:26px;font-weight:800;font-size:18px;text-align:center}
+.fb.ok{color:var(--stick-dark)} .fb.bad{color:#b33a29} .fb.info{color:var(--muted);font-weight:700;font-size:16px}
+.answer.shake{animation:shake .4s}
+@keyframes shake{25%{transform:translateX(-8px)}75%{transform:translateX(8px)}}
+
+/* ---------- Панель ---------- */
+.panel{display:flex;flex-direction:column;gap:14px;min-width:0}
+.box{background:var(--card);border:2px solid var(--line);border-radius:18px;padding:16px}
+.timer{display:flex;align-items:center;gap:14px}
+.ring{position:relative;width:86px;height:86px;flex:none}
+.ring svg{width:100%;height:100%;transform:rotate(-90deg)}
+.ring .bg{stroke:var(--line)} .ring .fg{stroke:var(--stick);transition:stroke-dashoffset .25s linear}
+.ring span{position:absolute;inset:0;display:grid;place-items:center;font:700 26px var(--f-display);font-variant-numeric:tabular-nums}
+.timer .what{font-weight:700;font-size:17px}
+.timer .sub{color:var(--muted);font-size:14px}
+
+.expr{font:700 clamp(30px,6vw,40px)/1.1 var(--f-display);text-align:center;font-variant-numeric:tabular-nums;white-space:nowrap}
+.expr .q{color:var(--muted)}
+.op{display:inline-block;padding:0 6px;border-radius:10px}
+.op.plus{background:#dff3e2;color:var(--stick-dark)} .op.minus{background:#fde3df;color:#b33a29}
+
+.btns{display:flex;flex-direction:column;gap:10px}
+button{font:800 17px var(--f-body);border-radius:14px;padding:13px 16px;cursor:pointer;border:2px solid transparent;color:var(--ink)}
+button.main{background:var(--sun);border-color:#e7b928;box-shadow:0 4px 0 #e0ae1c}
+button.main:active{transform:translateY(2px);box-shadow:0 2px 0 #e0ae1c}
+button.ghost{background:transparent;border-color:var(--line)}
+button:focus-visible,select:focus-visible{outline:3px solid #3a7bd5;outline-offset:2px}
+button[disabled]{opacity:.45;cursor:default}
+label.set{display:flex;justify-content:space-between;align-items:center;gap:10px;font-size:15px;color:var(--muted)}
+select{font:700 15px var(--f-body);padding:6px 8px;border-radius:10px;border:2px solid var(--line);background:var(--card);color:var(--ink)}
+.score{font-size:15px;color:var(--muted)} .score b{color:var(--ink)}
+
+@media (prefers-reduced-motion: reduce){*{animation-duration:.01ms!important;transition:none!important}}
+</style>
+
+<div class="wrap">
+  <header>
+    <h1>Десятки и единицы</h1>
+    <p>Посчитай палочки в руках. 10 палочек — это один десяток, 1 палочка — одна единица.</p>
+  </header>
+
+  <div class="game">
+    <section class="board" aria-label="Руки">
+      <div class="hands">
+        <div class="hand left" id="hand0"></div>
+        <div class="hand right" id="hand1"></div>
+      </div>
+      <div class="caption" id="caption" aria-live="polite"><span class="hint">Нажми «Начать игру»</span></div>
+      <div class="pv" id="pv" hidden>
+        <div class="t"><small>Десятки</small><b id="pvT">0</b></div>
+        <div class="u"><small>Единицы</small><b id="pvU">0</b></div>
+      </div>
+
+      <div class="answer" id="answer" hidden>
+        <div class="dials">
+          <div class="dial t">
+            <small>Десятки</small>
+            <div class="ctl">
+              <button class="step" data-d="t" data-v="-1" aria-label="Десятков меньше">−</button>
+              <output id="aT">0</output>
+              <button class="step" data-d="t" data-v="1" aria-label="Десятков больше">+</button>
+            </div>
+          </div>
+          <div class="dial u">
+            <small>Единицы</small>
+            <div class="ctl">
+              <button class="step" data-d="u" data-v="-1" aria-label="Единиц меньше">−</button>
+              <output id="aU">0</output>
+              <button class="step" data-d="u" data-v="1" aria-label="Единиц больше">+</button>
+            </div>
+          </div>
+        </div>
+        <div class="arow">
+          <button class="main" id="checkBtn">Проверить</button>
+          <button class="mic" id="micBtn" hidden>
+            <svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true"><rect x="9" y="3" width="6" height="11" rx="3" fill="currentColor"/><path d="M6 11a6 6 0 0 0 12 0M12 17v4M8.5 21h7" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+            <span id="micLabel">Сказать ответ</span>
+          </button>
+        </div>
+        <div class="fb" id="fb" aria-live="polite"></div>
+      </div>
+    </section>
+
+    <aside class="panel">
+      <div class="box timer">
+        <div class="ring">
+          <svg viewBox="0 0 100 100"><circle class="bg" cx="50" cy="50" r="44" fill="none" stroke-width="10"/><circle class="fg" id="ringFg" cx="50" cy="50" r="44" fill="none" stroke-width="10" stroke-linecap="round" stroke-dasharray="276.5" stroke-dashoffset="0"/></svg>
+          <span id="sec">60</span>
+        </div>
+        <div>
+          <div class="what" id="what">Готов?</div>
+          <div class="sub" id="sub">Секунды на подсчёт</div>
+        </div>
+      </div>
+
+      <div class="box expr" id="expr"><span class="q">? </span></div>
+
+      <div class="box btns">
+        <button class="main" id="mainBtn">Начать игру</button>
+        <button class="ghost" id="pauseBtn" disabled>Пауза</button>
+        <button class="ghost" id="resetBtn" disabled>Начать заново</button>
+        <label class="set" for="dur">Время на подсчёт
+          <select id="dur">
+            <option value="10">10 сек</option>
+            <option value="30">30 сек</option>
+            <option value="60" selected>60 сек</option>
+          </select>
+        </label>
+        <div class="score">Правильных ответов: <b id="score">0 из 0</b></div>
+      </div>
+    </aside>
+  </div>
+</div>
+
+<script>
+(function(){
+  const HAND_SVG = `<svg viewBox="0 0 200 220" aria-hidden="true">
+    <g fill="var(--skin)" stroke="var(--skin-edge)" stroke-width="3">
+      <rect x="36" y="14" width="26" height="92" rx="13"/>
+      <rect x="66" y="4" width="26" height="100" rx="13"/>
+      <rect x="96" y="6" width="26" height="98" rx="13"/>
+      <rect x="126" y="20" width="24" height="86" rx="12"/>
+      <rect x="152" y="96" width="26" height="74" rx="13" transform="rotate(-38 165 133)"/>
+      <rect x="22" y="72" width="152" height="140" rx="56"/>
+    </g>
+    <path d="M60 120 Q100 135 140 118" fill="none" stroke="var(--skin-edge)" stroke-width="2" opacity=".45"/>
+  </svg><div class="sticks"></div>`;
+  const hands = [document.getElementById('hand0'), document.getElementById('hand1')];
+  hands.forEach(h => h.innerHTML = HAND_SVG);
+
+  const $ = id => document.getElementById(id);
+  const caption=$('caption'), pv=$('pv'), expr=$('expr'), mainBtn=$('mainBtn'), pauseBtn=$('pauseBtn');
+  const CIRC = 276.5;
+
+  const S = {phase:'idle', hand:0, start:0, sign:1, amt:0, result:0, rounds:0,
+             endAt:0, left:0, total:60, paused:false, tick:null, waits:[]};
+
+  const rand = (a,b) => a + Math.floor(Math.random()*(b-a+1));
+  function plural(n, one, few, many){
+    const m10=n%10, m100=n%100;
+    if(m10===1 && m100!==11) return one;
+    if(m10>=2 && m10<=4 && (m100<12 || m100>14)) return few;
+    return many;
+  }
+  function words(n){
+    const t=Math.floor(n/10), u=n%10, parts=[];
+    if(t) parts.push(`${t} ${plural(t,'десяток','десятка','десятков')}`);
+    if(u || !t) parts.push(`${u} ${plural(u,'единица','единицы','единиц')}`);
+    return parts.join(' и ');
+  }
+
+  /* Рисуем руку: сверху связанные десятки (по 5 в ряд), снизу отдельные палочки
+     рядами по 10, внутри ряда группы по 5 — так их легко считать глазами.
+     opts: enterFrom — с какой отдельной палочки начинается «падение»,
+           leaveFrom — с какой отдельной палочки начинается «улетание»,
+           freshFrom — с какого десятка десятки появляются с анимацией,
+           bundleLeaveFrom — с какого десятка десятки улетают. */
+  function draw(bundles, loose, opts={}){
+    const {enterFrom=-1, leaveFrom=-1, freshFrom=-1, bundleLeaveFrom=-1} = opts;
+    hands.forEach((h,i) => { if(i!==S.hand) h.querySelector('.sticks').innerHTML=''; });
+    const box = hands[S.hand].querySelector('.sticks');
+    box.innerHTML='<div class="bundles"></div><div class="loose"></div>';
+    const bBox=box.firstChild, lBox=box.lastChild;
+    for(let b=0; b<bundles; b++){
+      const el=document.createElement('div'); el.className='bundle';
+      el.innerHTML='<i></i>'.repeat(10);
+      if(freshFrom>=0 && b>=freshFrom) el.classList.add('fresh');
+      if(bundleLeaveFrom>=0 && b>=bundleLeaveFrom){ el.classList.add('leave'); el.style.animationDelay=((bundles-1-b)*120)+'ms'; }
+      bBox.appendChild(el);
+    }
+    let idx=0;
+    while(idx<loose){
+      const row=document.createElement('div'); row.className='row';
+      for(let g=0; g<2 && idx<loose; g++){
+        const grp=document.createElement('div'); grp.className='group';
+        for(let k=0; k<5 && idx<loose; k++, idx++){
+          const s=document.createElement('div'); s.className='stick';
+          if(enterFrom>=0 && idx>=enterFrom){ s.classList.add('enter'); s.style.animationDelay=((idx-enterFrom)*90)+'ms'; }
+          if(leaveFrom>=0 && idx>=leaveFrom){ s.classList.add('leave'); s.style.animationDelay=((loose-1-idx)*90)+'ms'; }
+          grp.appendChild(s);
+        }
+        row.appendChild(grp);
+      }
+      lBox.appendChild(row);
+    }
+  }
+  const drawNumber = (n, opts) => draw(Math.floor(n/10), n%10, opts);
+
+  function say(text, cls='say'){ caption.innerHTML=`<span class="${cls}"></span>`; caption.firstChild.textContent=text; }
+  function showPV(n){ pv.hidden=false; $('pvT').textContent=Math.floor(n/10); $('pvU').textContent=n%10; }
+  function setExpr(html){ expr.innerHTML=html; }
+  function opHTML(){ return `<span class="op ${S.sign>0?'plus':'minus'}">${S.sign>0?'+':'−'} ${S.amt}</span>`; }
+
+  function wait(ms, fn){ S.waits.push(setTimeout(fn, ms)); }
+  function clearAll(){ clearInterval(S.tick); S.waits.forEach(clearTimeout); S.waits=[]; }
+
+  /* ---- таймер ---- */
+  function drawTimer(){
+    const sec=Math.ceil(S.left/1000);
+    $('sec').textContent=Math.max(0,sec);
+    $('ringFg').setAttribute('stroke-dashoffset', CIRC*(1 - S.left/(S.total*1000)));
+  }
+  function startTimer(label, done){
+    S.total=+$('dur').value; S.left=S.total*1000; S.paused=false; S.onDone=done;
+    $('what').textContent=label; $('sub').textContent='Считай палочки';
+    pauseBtn.disabled=false; pauseBtn.textContent='Пауза';
+    mainBtn.textContent='Показать ответ сейчас';
+    S.endAt=Date.now()+S.left; drawTimer();
+    clearInterval(S.tick);
+    S.tick=setInterval(()=>{
+      if(S.paused) return;
+      S.left=S.endAt-Date.now(); drawTimer();
+      if(S.left<=0) finishTimer();
+    },200);
+  }
+  function finishTimer(){
+    clearInterval(S.tick); S.left=0; drawTimer();
+    pauseBtn.disabled=true;
+    const fn=S.onDone; S.onDone=null; if(fn) fn();
+  }
+  function stopTimerIdle(text, sub){
+    clearInterval(S.tick); pauseBtn.disabled=true;
+    $('what').textContent=text; $('sub').textContent=sub||'';
+  }
+
+  /* ---- ход игры: одна непрерывная цепочка, без сброса ---- */
+  const MAX=100;
+
+  function chooseOp(n){
+    if(n<5) return {sign:1, amt:rand(7,10)};          // мало палочек — всегда плюс 7–10
+    const sign = n>=MAX ? -1 : (Math.random()<.5 ? 1 : -1);
+    const amt  = sign>0 ? rand(1, Math.min(10, MAX-n)) : rand(1, Math.min(10, n-1));
+    return {sign, amt};
+  }
+
+  function startGame(){
+    clearAll();
+    S.n=rand(1,10); S.hand=rand(0,1); S.prev=null; S.revealOpts={};
+    S.asked=0; S.correct=0; updateScore();
+    pv.hidden=true;
+    say('Сколько палочек у тебя в руке?','hint');
+    setExpr('<span class="q">?</span>');
+    drawNumber(S.n, S.n===10 ? {freshFrom:0} : {enterFrom:0});
+    resetBtn.disabled=false;
+    S.phase='count';
+    startTimer('Посчитай палочки', reveal);
+    openAnswer();
+  }
+
+  function reveal(){
+    clearAll();
+    S.phase='shown';
+    drawNumber(S.n, S.revealOpts); S.revealOpts={};
+    say(words(S.n)); showPV(S.n);
+    setExpr(S.prev===null ? `${S.n}` : `${S.prev} ${opHTML()} = ${S.n}`);
+    closeAnswer();
+    const head = S.result==='ok' ? 'Верно! Молодец!' : 'Правильный ответ';
+    stopTimerIdle(head, S.formed ? '10 палочек связали в десяток. Сейчас палочки изменятся…' : 'Сейчас палочки изменятся…');
+    S.formed=false;
+    mainBtn.textContent='Дальше';
+    wait(5000, nextOp);
+  }
+
+  function nextOp(){
+    if(S.phase!=='shown') return;
+    clearAll();
+    const op=chooseOp(S.n); S.sign=op.sign; S.amt=op.amt;
+    const a=S.n, B=Math.floor(a/10), U=a%10;
+    S.prev=a; S.n=a+S.sign*S.amt;
+    S.phase='count';
+    pv.hidden=true;
+    setExpr(`${a} ${opHTML()} = <span class="q">?</span>`);
+
+    if(S.sign>0){
+      say(a<5 ? `Палочек мало — тебе дали ещё ${S.amt}!` : `Тебе дали ещё ${S.amt}!`,'hint');
+      draw(B, U+S.amt, {enterFrom:U});
+      if(U+S.amt>=10){ S.formed=true; S.revealOpts={freshFrom:B}; }
+    } else {
+      say(`У тебя забрали ${S.amt}!`,'hint');
+      if(S.amt<=U){
+        draw(B, U, {leaveFrom:U-S.amt});
+        wait(800+S.amt*90, ()=>draw(B, U-S.amt));
+      } else {
+        // не хватает единиц — развязываем один десяток
+        draw(B, U, {bundleLeaveFrom:B-1});
+        wait(700, ()=>{
+          draw(B-1, U+10, {enterFrom:U});
+          wait(1500, ()=>{
+            draw(B-1, U+10, {leaveFrom:U+10-S.amt});
+            wait(800+S.amt*90, ()=>draw(B-1, U+10-S.amt));
+          });
+        });
+      }
+    }
+    startTimer('Сколько теперь?', reveal);
+    openAnswer();
+  }
+
+  /* ---- ответ ребёнка: счётчики и голос ---- */
+  const answer=$('answer'), fb=$('fb'), micBtn=$('micBtn');
+  function updateScore(){ $('score').textContent=`${S.correct} из ${S.asked}`; }
+  function setDials(t,u){ S.aT=t; S.aU=u; $('aT').textContent=t; $('aU').textContent=u; }
+  function feedback(text, cls){ fb.textContent=text; fb.className='fb '+(cls||''); }
+  function openAnswer(){
+    S.asked++; S.result='none'; updateScore();
+    setDials(0,0); feedback('');
+    answer.hidden=false;
+  }
+  function closeAnswer(){ answer.hidden=true; stopMic(); }
+
+  answer.querySelectorAll('button.step').forEach(b=>b.addEventListener('click',()=>{
+    if(S.phase!=='count') return;
+    const v=+b.dataset.v;
+    if(b.dataset.d==='t') setDials(Math.min(10,Math.max(0,S.aT+v)), S.aU);
+    else setDials(S.aT, Math.min(9,Math.max(0,S.aU+v)));
+    feedback('');
+  }));
+
+  function check(){
+    if(S.phase!=='count') return;
+    const val=S.aT*10+S.aU;
+    if(val===S.n){
+      S.result='ok'; S.correct++; updateScore();
+      feedback('Верно!','ok');
+      finishTimer();
+    } else {
+      S.result='miss';
+      feedback('Не совсем. Посчитай ещё раз!','bad');
+      answer.classList.remove('shake'); void answer.offsetWidth; answer.classList.add('shake');
+    }
+  }
+  $('checkBtn').addEventListener('click', check);
+
+  /* Разбор сказанного: «один десяток и две единицы», «двенадцать», «12» */
+  const NUM={'ноль':0,'нуль':0,'один':1,'одна':1,'одну':1,'одного':1,'два':2,'две':2,'двух':2,'три':3,'трех':3,
+    'четыре':4,'четырех':4,'пять':5,'пяти':5,'шесть':6,'шести':6,'семь':7,'семи':7,'восемь':8,'восьми':8,'девять':9,'девяти':9,
+    'десять':10,'одиннадцать':11,'двенадцать':12,'тринадцать':13,'четырнадцать':14,'пятнадцать':15,'шестнадцать':16,
+    'семнадцать':17,'восемнадцать':18,'девятнадцать':19,'двадцать':20,'тридцать':30,'сорок':40,'пятьдесят':50,
+    'шестьдесят':60,'семьдесят':70,'восемьдесят':80,'девяносто':90,'сто':100};
+  function parseSpoken(text){
+    const toks=(text.toLowerCase().replace(/ё/g,'е').match(/\d+|[а-я]+/g))||[];
+    let tens=null, units=null, cur=null, seen=false;
+    for(const t of toks){
+      if(/^\d+$/.test(t)) cur=(cur||0)+(+t);
+      else if(t in NUM) cur=(cur||0)+NUM[t];
+      else if(t.startsWith('десят')){ tens=(tens||0)+(cur ?? 1); cur=null; seen=true; }
+      else if(t.startsWith('единиц')||t.startsWith('единичк')){ units=(units||0)+(cur ?? 1); cur=null; seen=true; }
+    }
+    if(seen){ if(units===null && cur!==null) units=cur; return (tens||0)*10+(units||0); }
+    return cur;
+  }
+
+  const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+  let rec=null, listening=false;
+  if(SR) micBtn.hidden=false;
+  function stopMic(){ if(rec && listening){ try{rec.abort();}catch(e){} } listening=false; micBtn.classList.remove('on'); $('micLabel').textContent='Сказать ответ'; }
+  micBtn.addEventListener('click', ()=>{
+    if(S.phase!=='count') return;
+    if(listening){ stopMic(); return; }
+    try{
+      rec=new SR(); rec.lang='ru-RU'; rec.interimResults=false; rec.maxAlternatives=5;
+      rec.onresult=e=>{
+        const alts=[...e.results[0]].map(a=>a.transcript);
+        let n=null, heard=alts[0];
+        for(const a of alts){ const v=parseSpoken(a); if(v!==null && v>=0 && v<=100){ n=v; heard=a; break; } }
+        stopMic();
+        if(n===null){ feedback(`Ты сказал: «${heard}». Не понял число, скажи ещё раз.`,'info'); return; }
+        setDials(Math.floor(n/10), n%10);
+        feedback(`Ты сказал: «${heard}»`,'info');
+        setTimeout(check, 700);
+      };
+      rec.onerror=e=>{
+        stopMic();
+        if(e.error==='not-allowed'||e.error==='service-not-allowed') feedback('Нет доступа к микрофону. Разреши микрофон в браузере.','info');
+        else if(e.error==='no-speech') feedback('Не расслышал. Нажми и скажи ещё раз.','info');
+        else if(e.error==='network') feedback('Для голоса нужен интернет.','info');
+        else feedback('Микрофон не сработал. Ответь кнопками.','info');
+      };
+      rec.onend=()=>{ if(listening) stopMic(); };
+      rec.start(); listening=true;
+      micBtn.classList.add('on'); $('micLabel').textContent='Слушаю…';
+      feedback('Скажи, например: «один десяток и две единицы»','info');
+    }catch(err){ stopMic(); feedback('Голосовой ответ здесь не работает. Ответь кнопками.','info'); }
+  });
+
+  const resetBtn=$('resetBtn');
+  mainBtn.addEventListener('click', ()=>{
+    if(S.phase==='idle') startGame();
+    else if(S.phase==='count') finishTimer();
+    else if(S.phase==='shown') nextOp();
+  });
+  resetBtn.addEventListener('click', startGame);
+  pauseBtn.addEventListener('click', ()=>{
+    if(S.phase!=='count') return;
+    if(!S.paused){ S.paused=true; S.left=S.endAt-Date.now(); pauseBtn.textContent='Продолжить'; }
+    else { S.paused=false; S.endAt=Date.now()+S.left; pauseBtn.textContent='Пауза'; }
+  });
+  $('dur').addEventListener('change', ()=>{ if(S.phase==='idle'){ S.total=+$('dur').value; S.left=S.total*1000; drawTimer(); } });
+
+  /* Пример на экране до старта: 6 палочек в левой руке */
+  S.hand=0; drawNumber(6); S.total=60; S.left=60000; drawTimer();
+})();
+</script>
+
+</html>
